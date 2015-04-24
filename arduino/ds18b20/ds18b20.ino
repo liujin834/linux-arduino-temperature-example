@@ -10,8 +10,7 @@ DallasTemperature sensors(&ourWire);
 void setup()
 {
   Serial.begin(9600);
-  delay(1000);
-  //start reading
+  delay(3000);
   sensors.begin();
 }
 
@@ -19,6 +18,5 @@ void loop()
 {
   //read temperature and output via serial
   sensors.requestTemperatures();
-  Serial.print(sensors.getTempCByIndex(0));
-  Serial.println(" degrees C");
+  Serial.println(sensors.getTempCByIndex(0));
 }
