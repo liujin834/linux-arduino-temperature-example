@@ -11,6 +11,6 @@ while True:
 
     if len(string) == 5:
         print str(string)
-
-    print "abort"
+    else:
+        print "abort"
     time.sleep(3)
