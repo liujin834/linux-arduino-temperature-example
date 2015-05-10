@@ -1,0 +1,102 @@
+<?php
+$this->headScript()->appendFile($this->basePath() . "/lib/highcharts/highcharts.js");
+$this->headScript()->appendFile($this->basePath() . "/lib/socket.io/socket.io.js");
+?>
+<div id="alert-box" class="alert alert-info alert-dismissible" role="alert" style="display: none">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <span id="alert-text"></span>
+</div>
+<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+<?php
+$today = date("Y-m-d");
+$year = date("Y");
+$month = date("m");
+$day = date("d");
+$daye = date("d") + 1;
+
+$this->inlineScript()->captureStart();
+echo <<<JS
+var chart = null;
+
+$(function () {
+
+    $('#container').highcharts({
+        title: {
+            text: 'Average Temperature',
+            x: -20 //center
+        },
+        subtitle: {
+            text: '{$today}',
+            x: -20
+        },
+        yAxis: {
+            title: {
+                text: 'Temperature (°C)'
+            },
+            plotLines: [{
+                value: 0,
+                width: 1,
+                color: '#808080'
+            }]
+        },
+        xAxis: {
+            type: 'datetime',
+            tickInterval: 3600 * 1000,
+            min: Date.UTC({$year},{$month},{$day}),
+            max: Date.UTC({$year},{$month},{$daye})
+        },
+        tooltip: {
+            valueSuffix: '°C',
+            pointFormat: '{series.name}: <b>{point.y}</b><br/>',
+            xDateFormat: '%Y-%m-%d %H:%M'
+        }
+    });
+
+    defineChart();
+
+    $.getJSON('',function(data){
+
+        var d = [];
+
+        for(var i in data){
+            var date = Date.UTC(data[i].observe_year,data[i].observe_month,data[i].observe_day,data[i].observe_hour,data[i].observe_minute);
+            d.push([date , data[i].val]);
+        }
+
+        chart.addSeries({
+            id : "ear",
+            name : "jack's house temperature",
+            data : d,
+            xAxis : 0
+        });
+
+        var s1 = chart.get('ear');
+
+        //console.log(s1);
+
+        var socket = io('http://sensor.westdc.org:8010/');
+        socket.emit('get data', data.pop());
+        socket.on('latest data', function (data) {
+            if(data != null && typeof(data) == 'object' && Object.keys(data).length > 0)
+            {
+                for(i in data){
+                    s1.addPoint([
+                        Date.UTC(data[i].observe_year,data[i].observe_month,data[i].observe_day,data[i].observe_hour,data[i].observe_minute),
+                        data[i].val
+                    ]);
+                }
+            }
+            //console.log(Object.keys(data).length);
+        });
+
+    });
+});
+function defineChart(){
+    chart = $('#container').highcharts();
+    if(chart == null || chart == "undefined"){
+        setTimeout("defineChart()",500);
+    }
+}
+JS;
+$this->inlineScript()->captureEnd();
+?>
